@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.4
+// @version      1.1.5
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -61,7 +61,8 @@ class Scraper {
 	}
 
 	_scrapOriginPrice() {
-		let price = document.querySelector('.game_purchase_action .discount_original_price,.game_purchase_price')?.innerText;
+		const parentCls = '.sih_game_node .game_purchase_action';
+		let price = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
 
 		var pattern = /.*?([\d,]+).*/;
 		return price?.replace(pattern, '$1');
