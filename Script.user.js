@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.5
+// @version      1.1.6
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -69,7 +69,7 @@ class Scraper {
 	}
 
 	_scrapBestOff() {
-		let bestOff = document.body.querySelector('.steamdb_prices a')?.innerText;
+		let bestOff = document.body.querySelector('.steamdb_prices_top')?.innerText;
 
 		var pattern = /.*at.-(\d+)%.*/;
 		return bestOff?.match(pattern) ? bestOff?.replace(pattern, '$1') : '0';
