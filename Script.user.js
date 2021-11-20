@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.6
+// @version      1.1.7
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -111,9 +111,7 @@ class Logger {
 	}
 }
 
-let timeToWait = 3000;
-Logger.info(`Wait ${timeToWait/1000} second(s) for steamdb loading (for best off)`);
-setTimeout(() => {
+window.scrapeSteam = () => {
 	Logger.info('Start to scrap steam info ...');
 	let infos = new Scraper().scrap();
 	
@@ -125,5 +123,11 @@ setTimeout(() => {
 		})
 		.catch(() => {
 			Logger.error('Failed to write to the clipboard, args:', arguments);
-		});
-}, timeToWait);
+			return infos;
+		}
+	);
+}
+
+let timeToWait = 3000;
+Logger.info(`Wait ${timeToWait/1000} second(s) for steamdb loading (for best off)`);
+setTimeout(window.scrapeSteam, timeToWait);
