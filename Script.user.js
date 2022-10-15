@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.7
+// @version      1.1.8
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -103,7 +103,7 @@ class Logger {
 		args.splice(0, 0, '[SteamScraper]');
 		console.log.apply(console, args);
 	}
-	
+
 	static error() {
 		let args = Array.from(arguments);
 		args.splice(0, 0, '[SteamScraper]');
@@ -114,9 +114,9 @@ class Logger {
 window.scrapeSteam = () => {
 	Logger.info('Start to scrap steam info ...');
 	let infos = new Scraper().scrap();
-	
+
 	Logger.info('Scraped info:', infos);
-	
+
 	ClipboardWriter.writeTexts(infos)
 		.then(() => {
 			Logger.info('Clipboard written.');
@@ -128,6 +128,21 @@ window.scrapeSteam = () => {
 	);
 }
 
-let timeToWait = 3000;
-Logger.info(`Wait ${timeToWait/1000} second(s) for steamdb loading (for best off)`);
-setTimeout(window.scrapeSteam, timeToWait);
+function addScrapeButton() {
+	const btn = document.createElement('button');
+
+	btn.style.position = 'fixed'
+	btn.style.right = '30px';
+	btn.style.top = '30px';
+	btn.style.height = '40pt'
+	btn.style.width = '80pt'
+	btn.style.zIndex = '50';
+
+	btn.innerText = 'Scrape info';
+
+	btn.addEventListener('click', window.scrapeSteam);
+
+	document.body.appendChild(btn);
+}
+
+addScrapeButton();
