@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.8
+// @version      1.2.0
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -126,23 +126,74 @@ window.scrapeSteam = () => {
 			return infos;
 		}
 	);
-}
+};
 
-function addScrapeButton() {
+function createScrapeButton() {
 	const btn = document.createElement('button');
 
-	btn.style.position = 'fixed'
-	btn.style.right = '30px';
-	btn.style.top = '30px';
-	btn.style.height = '40pt'
-	btn.style.width = '80pt'
-	btn.style.zIndex = '50';
+	btn.style.height = '32pt';
+	btn.style.width = '80pt';
 
 	btn.innerText = 'Scrape info';
 
 	btn.addEventListener('click', window.scrapeSteam);
 
-	document.body.appendChild(btn);
+	return btn;
 }
 
-addScrapeButton();
+function createLangLabel() {
+	const label = document.createElement('p');
+
+	label.style.fontSize = '14pt';
+	label.style.display = 'inline';
+	label.style.marginRight = '5px';
+
+	function scrapeLangInfo() {
+		function isLangSupported(langTable, name) {
+			const res = document.evaluate(`//td[contains(., \'${name}\')]`, langTable, null, XPathResult.ANY_TYPE, null ).iterateNext();
+			if (!res) {
+				return false;
+			}
+			return res.nextElementSibling.innerText.includes('✔');
+		}
+
+		const languageTable = document.body.querySelector('#languageTable');
+		if (!languageTable) {
+			return '!';
+		}
+
+		if (isLangSupported(languageTable, '繁體中文')) {
+			return '繁';
+		} else if  (isLangSupported(languageTable, '簡體中文')) {
+			return '簡';
+		} else if  (isLangSupported(languageTable, '英文')) {
+			return '英';
+		} else {
+			return 'X';
+		}
+	}
+	label.innerText = scrapeLangInfo();
+
+	label.addEventListener('click', () => {
+		ClipboardWriter.writeTexts([label.innerText]);
+	});
+
+	return label;
+}
+
+function addMyUi() {
+	const area = document.createElement('div');
+
+	area.id = 'SteamScraperUi';
+	area.style.position = 'fixed';
+	area.style.right = '25px';
+	area.style.top = '20px';
+	area.style.zIndex = '50';
+
+	document.body.appendChild(area);
+
+	area.appendChild(createLangLabel());
+	area.appendChild(createScrapeButton());
+}
+
+addMyUi();

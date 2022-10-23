@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.1.8
+// @version      1.2.0
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
