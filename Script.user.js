@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.2.0
+// @version      1.3.0
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -33,25 +33,44 @@ class ClipboardWriter {
 }
 
 
-class Scraper {
+class SteamBasicParser {
+	static parseToClipboard(options) {
+		Logger.info('Start to parse steam info ...');
+		const infos = new SteamBasicParser().parse(options);
+
+		Logger.info('Parsed info:', infos);
+
+		ClipboardWriter.writeTexts(infos)
+			.then(() => {
+				Logger.info('Clipboard written.');
+			})
+			.catch(() => {
+				Logger.error('Failed to write to the clipboard, args:', arguments);
+				return infos;
+			}
+		);
+	}
+
 	constructor() {
 		this.results = [];
 	}
 
-	scrap() {
+	parse(options) {
 		this.results = [];
 
-		this.results.push(this._scrapTitleAndUrl());
-		this.results.push(this._scrapOriginPrice());
-		this.results.push(this._scrapBestOff());
-		this.results.push(this._scrapPublicDate());
-		this.results.push(this._scrapScore());
-		this.results.push(this._scrapCurrentDate());
+		if (options?.skipTitle !== true) {
+			this.results.push(this._parseTitleAndUrl());
+		}
+		this.results.push(this._parseOriginPrice());
+		this.results.push(this._parseBestOff());
+		this.results.push(this._parsePublicDate());
+		this.results.push(this._parseScore());
+		this.results.push(this._parseCurrentDate());
 
 		return this.results;
 	}
 
-	_scrapTitleAndUrl() {
+	_parseTitleAndUrl() {
 		let title = document.querySelector('.apphub_AppName')?.innerText;
 
 		let url = document.querySelector('.blockbg>a:last-child')?.baseURI;
@@ -60,7 +79,7 @@ class Scraper {
 		return `=HYPERLINK("${url}","${title}")`;
 	}
 
-	_scrapOriginPrice() {
+	_parseOriginPrice() {
 		const parentCls = '.sih_game_node .game_purchase_action';
 		let price = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
 
@@ -68,21 +87,21 @@ class Scraper {
 		return price?.replace(pattern, '$1');
 	}
 
-	_scrapBestOff() {
+	_parseBestOff() {
 		let bestOff = document.body.querySelector('.steamdb_prices_top')?.innerText;
 
 		var pattern = /.*at.-(\d+)%.*/;
 		return bestOff?.match(pattern) ? bestOff?.replace(pattern, '$1') : '0';
 	}
 
-	_scrapPublicDate() {
+	_parsePublicDate() {
 		let date = document.querySelector('.release_date .date')?.innerText;
 
 		var pattern = /(\d{4}).*?(\d{1,2}).*?(\d{1,2}).*/;
 		return date?.replace(pattern, '$1/$2/$3');
 	}
 
-	_scrapScore() {
+	_parseScore() {
 		// There are 30-days(maybe) and all-days, we want the second one
 		let scores = document.querySelectorAll('.nonresponsive_hidden.responsive_reviewdesc');
 		let score = scores[scores.length - 1]?.innerText;
@@ -91,64 +110,27 @@ class Scraper {
 		return score?.replace(pattern, '$1');
 	}
 
-	_scrapCurrentDate() {
+	_parseCurrentDate() {
 		return new Date().toLocaleDateString();
 	}
 }
 
 
-class Logger {
-	static info() {
-		let args = Array.from(arguments);
-		args.splice(0, 0, '[SteamScraper]');
-		console.log.apply(console, args);
+class SteamAdditionParser {
+	static parseToClipboard(options) {
+		const infos = [new SteamAdditionParser().parse(options)];
+		ClipboardWriter.writeTexts(infos)
+			.then(() => {
+				Logger.info('Clipboard written.');
+			})
+			.catch(() => {
+				Logger.error('Failed to write to the clipboard, args:', arguments);
+				return infos;
+			}
+		);
 	}
 
-	static error() {
-		let args = Array.from(arguments);
-		args.splice(0, 0, '[SteamScraper]');
-		console.error.apply(console, args);
-	}
-}
-
-window.scrapeSteam = () => {
-	Logger.info('Start to scrap steam info ...');
-	let infos = new Scraper().scrap();
-
-	Logger.info('Scraped info:', infos);
-
-	ClipboardWriter.writeTexts(infos)
-		.then(() => {
-			Logger.info('Clipboard written.');
-		})
-		.catch(() => {
-			Logger.error('Failed to write to the clipboard, args:', arguments);
-			return infos;
-		}
-	);
-};
-
-function createScrapeButton() {
-	const btn = document.createElement('button');
-
-	btn.style.height = '32pt';
-	btn.style.width = '80pt';
-
-	btn.innerText = 'Scrape info';
-
-	btn.addEventListener('click', window.scrapeSteam);
-
-	return btn;
-}
-
-function createLangLabel() {
-	const label = document.createElement('p');
-
-	label.style.fontSize = '14pt';
-	label.style.display = 'inline';
-	label.style.marginRight = '5px';
-
-	function scrapeLangInfo() {
+	static parseLangInfo() {
 		function isLangSupported(langTable, name) {
 			const res = document.evaluate(`//td[contains(., \'${name}\')]`, langTable, null, XPathResult.ANY_TYPE, null ).iterateNext();
 			if (!res) {
@@ -164,21 +146,92 @@ function createLangLabel() {
 
 		if (isLangSupported(languageTable, '繁體中文')) {
 			return '繁';
-		} else if  (isLangSupported(languageTable, '簡體中文')) {
+		} else if (isLangSupported(languageTable, '簡體中文')) {
 			return '簡';
-		} else if  (isLangSupported(languageTable, '英文')) {
+		} else if (isLangSupported(languageTable, '英文')) {
 			return '英';
 		} else {
 			return 'X';
 		}
 	}
-	label.innerText = scrapeLangInfo();
 
-	label.addEventListener('click', () => {
-		ClipboardWriter.writeTexts([label.innerText]);
-	});
+	static parseHoursInfo() {
+		const hourDoms = document.querySelectorAll('.hours.ellipsis');
+		const hours = Array.from(hourDoms, (dom) => {
+			return parseFloat(dom.innerText.match(/[^0-9]*([0-9\.]+)[^0-9.]*/)[1]);
+		}).sort((a, b) => (a - b));
 
-	return label;
+		function getMedian(values) {
+			const half = Math.floor(values.length / 2);
+			return (values.length % 2) ? values[half] : ((values[half - 1] + values[half]) / 2.0);
+		}
+
+		function getThMax(values, numberTh) {
+			if (values.length < 5) {
+				return undefined;
+			}
+			return values.at(-numberTh);
+		}
+
+		return `中位${Math.round(getMedian(hours))}H，3rd.高${Math.round(getThMax(hours, 3))}H。`;
+	}
+
+	constructor() {}
+
+	parse(options) {
+		return `${SteamAdditionParser.parseLangInfo()}。${SteamAdditionParser.parseHoursInfo()}`;
+	}
+}
+
+
+class Logger {
+	static info() {
+		let args = Array.from(arguments);
+		args.splice(0, 0, '[SteamParser]');
+		console.log.apply(console, args);
+	}
+
+	static error() {
+		let args = Array.from(arguments);
+		args.splice(0, 0, '[SteamParser]');
+		console.error.apply(console, args);
+	}
+}
+
+
+function createParseButton() {
+	const height = '32px';
+
+	const container = document.createElement('div');
+	container.style.height = height;
+
+	const wholeBtn = document.createElement('button');
+	wholeBtn.innerText = 'Parse info';
+	wholeBtn.style.height = height;
+	wholeBtn.style.width = '106px';
+	wholeBtn.id = 'ekko-parser-whole';
+	wholeBtn.addEventListener('click', SteamBasicParser.parseToClipboard);
+
+	const skipTitleBtn = document.createElement('button');
+	skipTitleBtn.innerText = '(!title)';
+	skipTitleBtn.style.height = height;
+	skipTitleBtn.style.width = '42px';
+	skipTitleBtn.style.fontSize = '10pt';
+	skipTitleBtn.id = 'ekko-parser-without-title';
+	skipTitleBtn.addEventListener('click', SteamBasicParser.parseToClipboard.bind(undefined, { skipTitle: true }));
+
+	const additionBtn = document.createElement('button');
+	additionBtn.innerText = 'detail';
+	additionBtn.style.height = height;
+	additionBtn.style.width = '65px';
+	additionBtn.style.marginLeft = '5px';
+	additionBtn.id = 'ekko-parser-additional';
+	additionBtn.addEventListener('click', SteamAdditionParser.parseToClipboard);
+
+	container.appendChild(wholeBtn);
+	container.appendChild(skipTitleBtn);
+	container.appendChild(additionBtn);
+	return container;
 }
 
 function addMyUi() {
@@ -192,8 +245,14 @@ function addMyUi() {
 
 	document.body.appendChild(area);
 
-	area.appendChild(createLangLabel());
-	area.appendChild(createScrapeButton());
+	area.appendChild(createParseButton());
 }
 
 addMyUi();
+
+window.ekkodev = {
+	parseB: (options) => (SteamBasicParser.parseToClipboard(options)),
+	parseA: (options) => (SteamAdditionParser.parseToClipboard(options)),
+	getBasicParser: () => (new SteamBasicParser()),
+	getAdditionParser: () => (new SteamAdditionParser()),
+};
