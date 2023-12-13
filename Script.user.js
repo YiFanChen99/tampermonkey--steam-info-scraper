@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.0
+// @version      1.3.1
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -63,7 +63,7 @@ class SteamBasicParser {
 		}
 		this.results.push(this._parseOriginPrice());
 		this.results.push(this._parseBestOff());
-		this.results.push(this._parsePublicDate());
+		this.results.push(SteamBasicParser.parsePublicDate());
 		this.results.push(this._parseScore());
 		this.results.push(this._parseCurrentDate());
 
@@ -94,7 +94,7 @@ class SteamBasicParser {
 		return bestOff?.match(pattern) ? bestOff?.replace(pattern, '$1') : '0';
 	}
 
-	_parsePublicDate() {
+	static parsePublicDate() {
 		let date = document.querySelector('.release_date .date')?.innerText;
 
 		var pattern = /(\d{4}).*?(\d{1,2}).*?(\d{1,2}).*/;
@@ -128,6 +128,14 @@ class SteamAdditionParser {
 				return infos;
 			}
 		);
+	}
+
+	static parseEaInfo() {
+		const isEa = (document.body.querySelector('.inset').textContent === '搶先體驗遊戲');
+		if (!isEa) {
+			return '';
+		}
+		return `${SteamBasicParser.parsePublicDate()}EA。`;
 	}
 
 	static parseLangInfo() {
@@ -179,7 +187,7 @@ class SteamAdditionParser {
 	constructor() {}
 
 	parse(options) {
-		return `${SteamAdditionParser.parseLangInfo()}。${SteamAdditionParser.parseHoursInfo()}`;
+		return `${SteamAdditionParser.parseEaInfo()}${SteamAdditionParser.parseLangInfo()}。${SteamAdditionParser.parseHoursInfo()}`;
 	}
 }
 

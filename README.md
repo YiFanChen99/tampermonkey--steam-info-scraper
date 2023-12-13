@@ -1,4 +1,4 @@
-# Tampermonkey: Steam nfo scraper
+# Tampermonkey: Steam info scraper
 
 ## Installation
 
