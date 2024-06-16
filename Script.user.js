@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.2
+// @version      1.3.3
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -88,10 +88,12 @@ class SteamBasicParser {
 	}
 
 	_parseBestOff() {
-		let bestOff = document.body.querySelector('.steamdb_prices_top')?.innerText;
+		let bestPrice = document.body.querySelector('.steamdb_prices_top')?.innerText;
 
-		var pattern = /.*at.-(\d+)%.*/;
-		return bestOff?.match(pattern) ? bestOff?.replace(pattern, '$1') : '0';
+		const pattern = /\$\s?(\d+)/;
+		const matched = bestPrice.match(pattern);
+
+		return matched ? matched[1] : '0';
 	}
 
 	static parsePublicDate() {
