@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.4
+// @version      1.3.5
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -80,7 +80,7 @@ class SteamBasicParser {
 	}
 
 	_parseOriginPrice() {
-		const parentCls = '.sih_game_node .game_purchase_action';
+		const parentCls = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription) .game_purchase_action';
 		let price = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
 
 		var pattern = /.*?([\d,]+).*/;
