@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.6
+// @version      1.3.7
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -83,12 +83,20 @@ class SteamBasicParser {
 		const parentCls = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase) .game_purchase_action';
 		let price = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
 
+		if (price.includes('free') || price.includes('免費')) {
+			return '0';
+		}
+
 		var pattern = /.*?([\d,]+).*/;
 		return price?.replace(pattern, '$1');
 	}
 
 	_parseBestOff() {
 		const originPrice = this._parseOriginPrice();
+
+		if (originPrice === '0') {
+			return '100';
+		}
 
 		let bestPrice = document.body.querySelector('.steamdb_prices_top')?.innerText;
 		const pattern = /\$\s?(\d+)/;
