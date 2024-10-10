@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.9
+// @version      1.3.10
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -94,7 +94,7 @@ class SteamBasicParser {
 			var pattern = /.*?([\d,]+).*/;
 			const result = priceRaw?.replace(pattern, '$1').replaceAll(/,/g, '');
 
-			Logger.debug('`_parseOriginPrice` find raw %o and result %o', priceRaw, result);
+			Logger.debug(`'_parseOriginPrice' find raw '${priceRaw}' and result '${result}'`);
 			return result;
 		} catch(e) {
 			Logger.error('Error on _parseOriginPrice, %o', e);
@@ -115,7 +115,7 @@ class SteamBasicParser {
 		const price = (matched ? matched[1] : originPrice).replaceAll(/,/g, '');
 		const result = `${Math.round((1 - price / originPrice) * 100)}`;
 
-		Logger.debug('`_parseBestOff` find raw %o and result %o', bestPriceRaw, result);
+		Logger.debug(`'_parseBestOff' find raw '${bestPriceRaw}' and result '${result}'`);
 		return result;
 	}
 
@@ -288,7 +288,7 @@ function addMyUi() {
 }
 
 addMyUi();
-Logger.info('You can debug with `ekkodev` %o', ekkodev);
+Logger.info('You can debug with `ekkodev`', ekkodev);
 
 window.ekkodev = {
 	parseB: (options) => (SteamBasicParser.parseToClipboard(options)),
