@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.8
+// @version      1.3.9
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -85,16 +85,19 @@ class SteamBasicParser {
 	_parseOriginPrice() {
 		try {
 			const parentCls = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase) .game_purchase_action';
-			let price = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
+			let priceRaw = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
 
-			if (price.includes('free') || price.includes('免費')) {
+			if (priceRaw.includes('free') || priceRaw.includes('免費')) {
 				return '0';
 			}
 
 			var pattern = /.*?([\d,]+).*/;
-			return price?.replace(pattern, '$1');
+			const result = priceRaw?.replace(pattern, '$1').replaceAll(/,/g, '');
+
+			Logger.debug('`_parseOriginPrice` find raw %o and result %o', priceRaw, result);
+			return result;
 		} catch(e) {
-			console.warn('Error on _parseOriginPrice, %o', e);
+			Logger.error('Error on _parseOriginPrice, %o', e);
 			return '10000'; // fallback
 		}
 	}
@@ -106,13 +109,14 @@ class SteamBasicParser {
 			return '100';
 		}
 
-		let bestPrice = document.body.querySelector('.steamdb_prices_top')?.innerText;
+		let bestPriceRaw = document.body.querySelector('.steamdb_prices_top')?.innerText;
 		const pattern = /\$\s?(\d+)/;
-		const matched = bestPrice.match(pattern);
-		const price = matched ? matched[1] : originPrice;
+		const matched = bestPriceRaw.match(pattern);
+		const price = (matched ? matched[1] : originPrice).replaceAll(/,/g, '');
+		const result = `${Math.round((1 - price / originPrice) * 100)}`;
 
-		const off = matched ? matched[1] : '0';
-		return `${Math.round((1 - price / originPrice) * 100)}`;
+		Logger.debug('`_parseBestOff` find raw %o and result %o', bestPriceRaw, result);
+		return result;
 	}
 
 	static parsePublicDate() {
@@ -220,6 +224,12 @@ class Logger {
 		console.log.apply(console, args);
 	}
 
+	static debug() {
+		let args = Array.from(arguments);
+		args.splice(0, 0, '[SteamParser]');
+		console.debug.apply(console, args);
+	}
+
 	static error() {
 		let args = Array.from(arguments);
 		args.splice(0, 0, '[SteamParser]');
@@ -278,6 +288,7 @@ function addMyUi() {
 }
 
 addMyUi();
+Logger.info('You can debug with `ekkodev` %o', ekkodev);
 
 window.ekkodev = {
 	parseB: (options) => (SteamBasicParser.parseToClipboard(options)),
