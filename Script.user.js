@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.10
+// @version      1.3.11
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -105,7 +105,7 @@ class SteamBasicParser {
 	_parseBestOff() {
 		const originPrice = this._parseOriginPrice();
 
-		if (originPrice === '0') {
+		if (originPrice === '0' || originPrice === '10000') {
 			return '100';
 		}
 
