@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.11
+// @version      1.3.12
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -288,11 +288,12 @@ function addMyUi() {
 }
 
 addMyUi();
-Logger.info('You can debug with `ekkodev`', ekkodev);
 
+// FIXME: maybe uneffective?
 window.ekkodev = {
 	parseB: (options) => (SteamBasicParser.parseToClipboard(options)),
 	parseA: (options) => (SteamAdditionParser.parseToClipboard(options)),
 	getBasicParser: () => (new SteamBasicParser()),
 	getAdditionParser: () => (new SteamAdditionParser()),
 };
+Logger.info('You can debug with `ekkodev`', ekkodev);
