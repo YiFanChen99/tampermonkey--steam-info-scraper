@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.13
+// @version      1.3.14
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -193,7 +193,7 @@ class SteamAdditionParser {
 	}
 
 	static parseHoursInfo() {
-		const hourDoms = document.querySelectorAll('.hours.ellipsis');
+		const hourDoms = document.querySelectorAll('.hours.ellipsis, ._1N9XZTVu3iXgXmyuKwSF4E');
 		const hours = Array.from(hourDoms, (dom) => {
 			return parseFloat(dom.innerText.match(/[^0-9]*([0-9\.]+)[^0-9.]*/)[1]);
 		}).sort((a, b) => (a - b));
