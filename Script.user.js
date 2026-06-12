@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam-info-scraper
 // @namespace    https://github.com/YiFanChen99/tampermonkey--steam-info-scraper
-// @version      1.3.14
+// @version      1.3.15
 // @description  As title
 // @author       YiFanChen99
 // @match        *://store.steampowered.com/app/*
@@ -33,6 +33,9 @@ class ClipboardWriter {
 }
 
 
+/**
+ * 遊戲主要基本資訊，對應 sheet 前面幾欄
+ */
 class SteamBasicParser {
 	static parseToClipboard(options) {
 		Logger.info('Start to parse steam info ...');
@@ -53,10 +56,12 @@ class SteamBasicParser {
 
 	constructor() {
 		this.results = [];
+		this.cache = {};
 	}
 
 	parse(options) {
 		this.results = [];
+		this.cache = {};
 
 		if (options?.skipTitle !== true) {
 			this.results.push(this._parseTitleAndUrl());
@@ -73,8 +78,10 @@ class SteamBasicParser {
 	_parseTitleAndUrl() {
 		let title = document.querySelector('.apphub_AppName')?.innerText;
 
-		let url = document.querySelector('.blockbg>a:last-child')?.baseURI;
-		url = url?.replace(/(.*?app\/\d+\/).*/, '$1');
+		const appId = window.location.pathname.match(/\/app\/(\d+)/)?.[1];
+		let url = appId
+			? `${window.location.origin}/app/${appId}/`
+			: window.location.href.replace(/[?#].*$/, '');
 
 		return `=HYPERLINK("${url}","${title}")`;
 	}
@@ -83,22 +90,35 @@ class SteamBasicParser {
 	 * @return string
 	 */
 	_parseOriginPrice() {
+		if (this.cache.originPrice !== undefined) {
+			return this.cache.originPrice;
+		}
+
 		try {
 			const parentCls = '.game_area_purchase_game:not(.game_area_purchase_game_dropdown_subscription):not(.demo_above_purchase) .game_purchase_action';
-			let priceRaw = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText;
+			let priceRaw = document.querySelector(`${parentCls} .discount_original_price, ${parentCls} .game_purchase_price`)?.innerText?.trim();
 
-			if (priceRaw.includes('free') || priceRaw.includes('免費')) {
-				return '0';
+			if (!priceRaw) {
+				throw new Error('Empty price text');
 			}
 
-			var pattern = /.*?([\d,]+).*/;
-			const result = priceRaw?.replace(pattern, '$1').replaceAll(/,/g, '');
+			if (priceRaw.toLowerCase().includes('free') || priceRaw.includes('免費')) {
+				this.cache.originPrice = '0';
+				return this.cache.originPrice;
+			}
+
+			const result = priceRaw.replace(/[^\d]/g, '');
+			if (!Number.isFinite(Number(result))) {
+				throw new Error(`Invalid numeric price, raw: ${priceRaw}`);
+			}
 
 			Logger.debug(`'_parseOriginPrice' find raw '${priceRaw}' and result '${result}'`);
-			return result;
+			this.cache.originPrice = result;
+			return this.cache.originPrice;
 		} catch(e) {
 			Logger.error('Error on _parseOriginPrice, %o', e);
-			return '10000'; // fallback
+			this.cache.originPrice = '10000';
+			return this.cache.originPrice; // fallback
 		}
 	}
 
@@ -123,28 +143,109 @@ class SteamBasicParser {
 		return result;
 	}
 
-	static parsePublicDate() {
-		let date = document.querySelector('.release_date .date')?.innerText;
+	static _formatDateToYMDSlash(date) {
+		if (!date) {
+			return date;
+		}
 
-		var pattern = /(\d{4}).*?(\d{1,2}).*?(\d{1,2}).*/;
-		return date?.replace(pattern, '$1/$2/$3');
+		const text = String(date).trim();
+		let matched = text.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?$/);
+		if (matched) {
+			return `${Number(matched[1])}/${Number(matched[2])}/${Number(matched[3])}`;
+		}
+
+		matched = text.match(/^(\d{4})[-/]\s*(\d{1,2})[-/]\s*(\d{1,2})$/);
+		if (matched) {
+			return `${Number(matched[1])}/${Number(matched[2])}/${Number(matched[3])}`;
+		}
+
+		matched = text.match(/^(\d{1,2})\s+([A-Za-z]{3,})\s*,?\s*(\d{4})$/);
+		if (matched) {
+			const monthMap = {
+				jan: 1,
+				january: 1,
+				feb: 2,
+				february: 2,
+				mar: 3,
+				march: 3,
+				apr: 4,
+				april: 4,
+				may: 5,
+				jun: 6,
+				june: 6,
+				jul: 7,
+				july: 7,
+				aug: 8,
+				august: 8,
+				sep: 9,
+				sept: 9,
+				september: 9,
+				oct: 10,
+				october: 10,
+				nov: 11,
+				november: 11,
+				dec: 12,
+				december: 12,
+			};
+			const month = monthMap[String(matched[2]).toLowerCase()];
+			if (month) {
+				return `${Number(matched[3])}/${month}/${Number(matched[1])}`;
+			}
+		}
+
+		const parsed = new Date(text);
+		if (!Number.isNaN(parsed.getTime())) {
+			return `${parsed.getFullYear()}/${parsed.getMonth() + 1}/${parsed.getDate()}`;
+		}
+
+		return text.replace(/-/g, '/');
 	}
 
+	static parsePublicDate() {
+		const dateText = document.querySelector('.release_date .date')?.innerText
+			|| document.querySelector('.game_area_release_date .date')?.innerText
+			|| document.querySelector('[itemprop="datePublished"]')?.getAttribute('content');
+
+		return SteamBasicParser._formatDateToYMDSlash(dateText);
+	}
+
+	/**
+	 * There are 30-days(maybe) and all-days, we want the second one
+	 */
 	_parseScore() {
-		// There are 30-days(maybe) and all-days, we want the second one
+		const rows = document.querySelectorAll('a.user_reviews_summary_row');
+		for (const row of rows) {
+			if (!row.querySelector('[itemprop="aggregateRating"]')) {
+				continue;
+			}
+
+			const summaryText = row.querySelector('.game_review_summary')?.textContent?.trim();
+			if (summaryText) {
+				return summaryText;
+			}
+		}
+
+		// fallback
 		let scores = document.querySelectorAll('.nonresponsive_hidden.responsive_reviewdesc');
 		let score = scores[scores.length - 1]?.innerText;
+		if (!score) {
+			return score;
+		}
 
 		var pattern = /.*?(\d+)%.*/s;
 		return score?.replace(pattern, '$1');
 	}
 
 	_parseCurrentDate() {
-		return new Date().toLocaleDateString();
+		const now = new Date();
+		return `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
 	}
 }
 
-
+/**
+ * 對應 sheet 後面幾欄的細節資訊
+ * 主要是 comments 要等觸發並載入完成後才抓得到
+ */
 class SteamAdditionParser {
 	static parseToClipboard(options) {
 		const infos = [new SteamAdditionParser().parse(options)];
