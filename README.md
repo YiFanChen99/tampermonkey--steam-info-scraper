@@ -1,5 +1,7 @@
 # Tampermonkey: Steam info scraper
 
+> **已停止維護（2026-10-18）**：功能已由 [game-watchlist-keeper](https://github.com/YiFanChen99/game-watchlist-keeper) 的 `packages/userscript-steam`（Ekko Steam Sheet Writer）取代：按下按鈕就直接新增或更新 Sheet 的那一列，不再經過剪貼簿。本 repo 已封存。這支腳本不會自動換成新版，請先移除，再安裝 <https://yifanchen99.github.io/game-watchlist-keeper/steam/Script.user.js>。
+
 ## Features
 
 在 Steam 商店頁加上按鈕，一鍵擷取遊戲資訊，以 tab 分隔的格式存進剪貼簿，方便直接貼進試算表的一列。
